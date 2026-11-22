@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "name": "FoodPulse",
+  "kind": "static-spa",
+  "stack": {
+    "frontend": "vite",
+    "backend": "",
+    "database": "",
+    "orm": "",
+    "architecture": "monolith"
+  },
+  "services": [
+    {
+      "name": "web",
+      "root": ".",
+      "runtime": "node",
+      "runtimeVersion": "22",
+      "install": "npm ci",
+      "build": "npm run build",
+      "start": null,
+      "port": null,
+      "health": null,
+      "output": "dist"
+    }
+  ],
+  "routing": {
+    "apiPrefix": "/__nexen_api"
+  },
+  "database": null,
+  "env": [
+    {
+      "name": "DATABASE_URL",
+      "class": "secret",
+      "required": false
+    },
+    {
+      "name": "MOCK_MODE",
+      "class": "forbidden"
+    },
+    {
+      "name": "NEXT_PUBLIC_MOCK_MODE",
+      "class": "forbidden"
+    },
+    {
+      "name": "VITE_MOCK_MODE",
+      "class": "forbidden"
+    }
+  ],
+  "publishable": {
+    "ok": true,
+    "reasons": []
+  }
+}

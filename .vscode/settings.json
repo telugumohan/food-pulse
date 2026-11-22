@@ -1,0 +1,17 @@
+{
+    "files.readonlyInclude": {
+        "src/**": true,
+        "scripts/**": true,
+        "index.html": true,
+        "package.json": true,
+        "postcss.config.js": true,
+        "tailwind.config.ts": true,
+        "tsconfig.json": true,
+        "vite.config.ts": true,
+        ".env.example": true,
+        "prisma/**": true,
+        "codebenders.app.json": true,
+        "Dockerfile": true,
+        "README.md": true
+    }
+}
