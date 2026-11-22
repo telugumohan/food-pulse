@@ -62,9 +62,12 @@ export async function getDashboardSummary(userId: string): Promise<MockApiRespon
   const services = getStorageValue<DeliveryService[]>('foodpulse_mock_delivery_services', []).filter(
     (service) => service.volunteerId === userId,
   );
-  const donorProfiles = getStorageValue<DonorProfile[]>('foodpulse_mock_donor_profiles', []);
-  const receiverProfiles = getStorageValue<ReceiverProfile[]>('foodpulse_mock_receiver_profiles', []);
-  const volunteerProfiles = getStorageValue<VolunteerProfile[]>('foodpulse_mock_volunteer_profiles', []);
+  const donorProfilesRaw = getStorageValue<Record<string, DonorProfile> | DonorProfile[]>('foodpulse_mock_donor_profiles', {});
+  const receiverProfilesRaw = getStorageValue<Record<string, ReceiverProfile> | ReceiverProfile[]>('foodpulse_mock_receiver_profiles', {});
+  const volunteerProfilesRaw = getStorageValue<Record<string, VolunteerProfile> | VolunteerProfile[]>('foodpulse_mock_volunteer_profiles', {});
+  const donorProfiles = Array.isArray(donorProfilesRaw) ? donorProfilesRaw : Object.values(donorProfilesRaw);
+  const receiverProfiles = Array.isArray(receiverProfilesRaw) ? receiverProfilesRaw : Object.values(receiverProfilesRaw);
+  const volunteerProfiles = Array.isArray(volunteerProfilesRaw) ? volunteerProfilesRaw : Object.values(volunteerProfilesRaw);
 
   const todayDonatedMeals = donations
     .filter((donation) => isSameLocalDay(donation.createdAt, now))
@@ -103,9 +106,10 @@ export async function getDashboardSummary(userId: string): Promise<MockApiRespon
   ).length;
 
   const activeDonationsCount = donations.filter((donation) => {
+    const bestBefore = Date.parse(donation.bestBeforeAt);
     const availableUntil = Date.parse(donation.availableUntilAt);
     const remaining = donation.remainingVegMeals + donation.remainingNonVegMeals;
-    return !Number.isNaN(availableUntil) && availableUntil > nowMs && remaining > 0;
+    return !Number.isNaN(bestBefore) && bestBefore > nowMs && !Number.isNaN(availableUntil) && availableUntil > nowMs && remaining > 0;
   }).length;
 
   const activeRequestsCount = requests.filter((request) => {

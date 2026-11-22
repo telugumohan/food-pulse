@@ -1,13 +1,12 @@
-'use client';
-
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import { signUp as mockSignUp } from '@/api/mockAuthApi';
+import { validateEmail, validateFullName, validatePassword } from '@/api/validation';
 import AuthCard from '@/components/AuthCard';
 import FormField from '@/components/FormField';
 import { Button } from '@/components/ui/button';
-import { signUp } from '@/api/mockAuthApi';
-import { validateEmail, validateFullName, validatePassword } from '@/api/validation';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -24,41 +23,75 @@ export default function Signup() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (pending) {
-      return;
-    }
+    if (pending) return;
 
-    const nextFullNameError = validateFullName(fullName);
-    const nextEmailError = validateEmail(email);
+    const trimmedFullName = fullName.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    const nextFullNameError = validateFullName(trimmedFullName);
+    const nextEmailError = validateEmail(trimmedEmail);
     const nextPasswordError = validatePassword(password);
-    const nextConfirmPasswordError = confirmPassword === password ? null : 'Passwords do not match.';
+    const nextConfirmPasswordError =
+      confirmPassword === password ? null : 'Passwords do not match.';
+
     setFullNameError(nextFullNameError);
     setEmailError(nextEmailError);
     setPasswordError(nextPasswordError);
     setConfirmPasswordError(nextConfirmPasswordError);
     setApiError(null);
+
     if (nextFullNameError || nextEmailError || nextPasswordError || nextConfirmPasswordError) {
       return;
     }
 
     setPending(true);
-    const response = await signUp({ fullName: fullName.trim(), email: email.trim(), password });
-    if (response.error) {
-      setPending(false);
-      const field = response.error.field;
-      if (field === 'fullName') {
-        setFullNameError(response.error.message);
-      } else if (field === 'email') {
-        setEmailError(response.error.message);
-      } else {
-        setApiError(response.error.message);
+
+    try {
+      // 1. Supabase signUp (PRD §4.3)
+      const { data, error } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password,
+        options: {
+          data: { full_name: trimmedFullName },
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
+        },
+      });
+
+      if (!error && data?.user) {
+        navigate('/email-confirmation');
+        return;
       }
+
+      if (error && error.message !== 'Failed to fetch') {
+        setPending(false);
+        setPassword('');
+        setConfirmPassword('');
+        setApiError(error.message);
+        return;
+      }
+
+      // 2. Fallback to mock signUp if offline
+      const mockRes = await mockSignUp({
+        fullName: trimmedFullName,
+        email: trimmedEmail,
+        password,
+      });
+
+      if (mockRes.error) {
+        setPending(false);
+        setPassword('');
+        setConfirmPassword('');
+        setApiError(mockRes.error.message);
+        return;
+      }
+
+      navigate('/email-confirmation');
+    } catch {
+      setPending(false);
       setPassword('');
       setConfirmPassword('');
-      return;
+      setApiError('Unable to connect. Try again.');
     }
-
-    navigate('/email-confirmation');
   };
 
   return (
@@ -109,11 +142,11 @@ export default function Signup() {
           required
         />
 
-        {apiError ? (
+        {apiError && (
           <p role="alert" className="text-sm text-destructive">
             {apiError}
           </p>
-        ) : null}
+        )}
 
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? 'Signing up…' : 'Sign up'}

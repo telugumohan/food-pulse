@@ -1,6 +1,3 @@
-// Auto-generated router shell — PIPELINE-OWNED. Wires every declared page
-// into react-router. Do NOT hand-edit; edit the page components under
-// src/routes/. The IDE mounts the click-to-edit inspector into main.tsx.
 import type { ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
@@ -14,6 +11,7 @@ import DonatePage from './routes/donate';
 import CreateDonationPage from './routes/donate-create';
 import DonorOnboardingPage from './routes/donate-onboarding';
 import EmailConfirmationSentPage from './routes/email-confirmation';
+import AuthCallbackPage from './routes/auth-callback';
 import ForgotPasswordPage from './routes/forgot-password';
 import LoginPage from './routes/login';
 import MorePage from './routes/more';
@@ -92,19 +90,33 @@ function NotFoundPage() {
 export default function App() {
   return (
     <BrowserRouter>
-        <div data-nexen-component="AppShell" className="min-h-screen bg-background text-foreground">
-          <Routes>
+      <div data-nexen-component="AppShell" className="min-h-screen bg-background text-foreground">
+        <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/*" element={<NotFoundPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/email-confirmation" element={<EmailConfirmationSentPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/onboarding" element={<ProtectedRoute allowWithoutProfile><OnboardingPage /></ProtectedRoute>} />
+          <Route
+            path="/onboarding"
+            element={
+              <ProtectedRoute allowWithoutProfile>
+                <OnboardingPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/password-reset-sent" element={<PasswordResetSentPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/signup" element={<SignUpPage />} />
-          <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/donate" element={<DonatePage />} />
             <Route path="/donate/create" element={<CreateDonationPage />} />
@@ -116,8 +128,10 @@ export default function App() {
             <Route path="/volunteer" element={<VolunteerPage />} />
             <Route path="/volunteer/onboarding" element={<VolunteerOnboardingPage />} />
           </Route>
-          </Routes>
-        </div>
+
+          <Route path="/*" element={<NotFoundPage />} />
+        </Routes>
+      </div>
     </BrowserRouter>
   );
 }

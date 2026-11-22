@@ -252,6 +252,8 @@ export async function upsertVolunteerProfile(
   const profiles = getStorageValue<ProfileMap<VolunteerProfile>>(VOLUNTEER_PROFILES_KEY, {});
   const now = new Date().toISOString();
   const profile: VolunteerProfile = {
+    ...profiles[input.id],
+    ...input,
     id: input.id,
     available: input.available,
     createdAt: profiles[input.id]?.createdAt ?? now,

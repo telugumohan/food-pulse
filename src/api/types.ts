@@ -55,8 +55,37 @@ export interface ReceiverProfile {
 export interface VolunteerProfile {
   id: string;
   available: boolean;
+  vehicleType?: 'bicycle' | 'motorcycle' | 'car' | 'van' | 'walking' | string;
+  maxMealCapacity?: number;
+  operatingCity?: string;
+  baseAddress?: string;
+  latitude?: number;
+  longitude?: number;
+  contactPhone?: string;
+  schedulePreference?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ActiveDeliveryOrder {
+  id: string;
+  donationId: string;
+  requestId?: string;
+  foodDescription: string;
+  vegMeals: number;
+  nonVegMeals: number;
+  totalMeals: number;
+  pickupAddress: string;
+  pickupCity: string;
+  pickupLatitude: number;
+  pickupLongitude: number;
+  pickupDeadline: string;
+  receivingAddress: string;
+  receivingCity: string;
+  receivingLatitude: number;
+  receivingLongitude: number;
+  deliveryDeadline: string;
+  status: 'available' | 'assigned' | 'in_progress';
 }
 
 export interface Donation {
@@ -99,9 +128,33 @@ export interface FoodRequest {
 export interface DeliveryService {
   id: string;
   volunteerId: string;
+  allocationId?: string;
   status: 'assigned' | 'accepted' | 'active' | 'picked_up' | 'in_transit' | 'delivered' | 'declined' | 'cancelled' | 'failed';
   createdAt: string;
   endedAt: string | null;
+}
+
+/** A single row from FoodPulse_match_allocations, enriched with names for display */
+export interface MatchAllocation {
+  id: string;
+  donationId: string;
+  requestId: string | null;
+  volunteerId: string | null;
+  vegForPureVeg: number;
+  nonVegForFlex: number;
+  vegForFlex: number;
+  totalAllocated: number;
+  status: 'proposed' | 'confirmed' | 'cancelled';
+  createdAt: string;
+  // Enriched display fields (may be absent in fallback)
+  donorName?: string;
+  foodDescription?: string;
+  pickupAddress?: string;
+  receiverName?: string;
+  receivingAddress?: string;
+  volunteerName?: string;
+  vehicleType?: string;
+  deliveryStatus?: string;
 }
 
 export interface MockApiError {

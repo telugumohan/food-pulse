@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom';
-
 export interface RequestCardData {
   id: string;
   initialTotalMeals: number;
@@ -104,15 +102,6 @@ export default function RequestCard({ request }: RequestCardProps) {
           value={flexibleRemaining}
           detail="Any meal type"
         />
-      </div>
-
-      <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
-        <Link
-          to={`/receive/requests/${req.id}`}
-          className="inline-flex w-full items-center justify-center rounded-[var(--radius)] border border-border px-4 py-2 text-sm font-semibold text-foreground sm:w-auto"
-         data-nexen-id="nx-84d86bc9-7">
-          View request
-        </Link>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { upsertProfile } from '@/api/mockProfileApi';
+import { upsertProfile } from '@/api/supabaseApi';
 import {
   validateCity,
   validateFullName,
@@ -12,6 +12,7 @@ import {
 } from '@/api/validation';
 import AuthCard from '@/components/AuthCard';
 import FormField from '@/components/FormField';
+import LocationPicker from '@/components/LocationPicker';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/hooks/useSession';
 
@@ -70,6 +71,31 @@ export default function OnboardingPage() {
     });
   };
 
+  const handleLocationChange = (lat: number, lng: number) => {
+    setValues((prev) => ({
+      ...prev,
+      latitude: String(lat),
+      longitude: String(lng),
+    }));
+    setFieldErrors((prev) => {
+      const copy = { ...prev };
+      delete copy.latitude;
+      delete copy.longitude;
+      return copy;
+    });
+  };
+
+  const handleAddressFound = (_address: string, foundCity: string) => {
+    if (!values.city && foundCity) {
+      setValues((prev) => ({ ...prev, city: foundCity }));
+      setFieldErrors((prev) => {
+        const copy = { ...prev };
+        delete copy.city;
+        return copy;
+      });
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (saving) return;
@@ -88,9 +114,9 @@ export default function OnboardingPage() {
     try {
       const response = await upsertProfile({
         id: session.userId,
-        fullName: values.fullName,
-        phoneNumber: values.phoneNumber,
-        city: values.city,
+        fullName: values.fullName.trim(),
+        phoneNumber: values.phoneNumber.trim(),
+        city: values.city.trim(),
         latitude: Number(values.latitude.trim()),
         longitude: Number(values.longitude.trim()),
         role: 'user',
@@ -114,6 +140,9 @@ export default function OnboardingPage() {
       setSaving(false);
     }
   };
+
+  const currentLat = values.latitude ? Number(values.latitude) : null;
+  const currentLng = values.longitude ? Number(values.longitude) : null;
 
   return (
     <AuthCard
@@ -161,26 +190,48 @@ export default function OnboardingPage() {
           error={fieldErrors.city}
           disabled={saving}
         />
-        <FormField
-          label="Latitude"
-          name="latitude"
-          placeholder="-90 to 90"
-          required
-          value={values.latitude}
-          onChange={handleChange('latitude')}
-          error={fieldErrors.latitude}
-          disabled={saving}
-        />
-        <FormField
-          label="Longitude"
-          name="longitude"
-          placeholder="-180 to 180"
-          required
-          value={values.longitude}
-          onChange={handleChange('longitude')}
-          error={fieldErrors.longitude}
-          disabled={saving}
-        />
+
+        {/* Interactive Leaflet Map for Location Pin */}
+        <div className="space-y-1.5">
+          <label className="text-[0.8125rem] font-semibold text-foreground">
+            Location Pin <span className="text-destructive">*</span>
+          </label>
+          <LocationPicker
+            latitude={currentLat}
+            longitude={currentLng}
+            onLocationChange={handleLocationChange}
+            onAddressFound={handleAddressFound}
+            disabled={saving}
+          />
+          {(fieldErrors.latitude || fieldErrors.longitude) && (
+            <p className="text-xs text-destructive">
+              {fieldErrors.latitude || fieldErrors.longitude}
+            </p>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <FormField
+            label="Latitude"
+            name="latitude"
+            placeholder="-90 to 90"
+            required
+            value={values.latitude}
+            onChange={handleChange('latitude')}
+            error={fieldErrors.latitude}
+            disabled={saving}
+          />
+          <FormField
+            label="Longitude"
+            name="longitude"
+            placeholder="-180 to 180"
+            required
+            value={values.longitude}
+            onChange={handleChange('longitude')}
+            error={fieldErrors.longitude}
+            disabled={saving}
+          />
+        </div>
 
         <Button type="submit" className="w-full" disabled={saving}>
           {saving ? 'Saving…' : 'Save profile'}

@@ -1,57 +1,63 @@
-'use client';
-
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
+import { resetPassword as mockResetPassword } from '@/api/mockAuthApi';
+import { validatePassword } from '@/api/validation';
 import AuthCard from '@/components/AuthCard';
 import FormField from '@/components/FormField';
 import { Button } from '@/components/ui/button';
-import { resetPassword } from '@/api/mockAuthApi';
-import { validatePassword } from '@/api/validation';
-
-const MISSING_TOKEN_ERROR = 'This reset link is missing its token. Request a new password reset link.';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = (searchParams.get('token') ?? '').trim();
+
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const shownError = apiError ?? (token ? null : MISSING_TOKEN_ERROR);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (pending) {
-      return;
-    }
-
-    if (!token) {
-      return;
-    }
+    if (pending) return;
 
     const nextPasswordError = validatePassword(newPassword);
-    const nextConfirmPasswordError = confirmPassword === newPassword ? null : 'Passwords do not match.';
+    const nextConfirmPasswordError =
+      confirmPassword === newPassword ? null : 'Passwords do not match.';
     setPasswordError(nextPasswordError);
     setConfirmPasswordError(nextConfirmPasswordError);
     setApiError(null);
-    if (nextPasswordError || nextConfirmPasswordError) {
-      return;
-    }
+    if (nextPasswordError || nextConfirmPasswordError) return;
 
     setPending(true);
-    const response = await resetPassword(token, newPassword);
-    if (response.error) {
+
+    try {
+      // 1. Supabase updateUser (PRD §4.6)
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (!error) {
+        await supabase.auth.signOut();
+        navigate('/login');
+        return;
+      }
+
+      if (token) {
+        const mockRes = await mockResetPassword(token, newPassword);
+        if (!mockRes.error) {
+          navigate('/login');
+          return;
+        }
+      }
+
       setPending(false);
-      setApiError(response.error.message);
-      setNewPassword('');
-      setConfirmPassword('');
-      return;
+      setApiError(error.message);
+    } catch {
+      setPending(false);
+      setApiError('Unable to reset password. Please request a new reset link.');
     }
-    navigate('/login');
   };
 
   return (
@@ -66,7 +72,7 @@ export default function ResetPassword() {
           onChange={(event) => setNewPassword(event.target.value)}
           error={passwordError}
           hint="At least 8 characters, including a letter, a number and a special character."
-          disabled={pending || !token}
+          disabled={pending}
           required
         />
         <FormField
@@ -77,17 +83,17 @@ export default function ResetPassword() {
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
           error={confirmPasswordError}
-          disabled={pending || !token}
+          disabled={pending}
           required
         />
 
-        {shownError ? (
+        {apiError && (
           <p role="alert" className="text-sm text-destructive">
-            {shownError}
+            {apiError}
           </p>
-        ) : null}
+        )}
 
-        <Button type="submit" className="w-full" disabled={pending || !token}>
+        <Button type="submit" className="w-full" disabled={pending}>
           {pending ? 'Resetting…' : 'Reset password'}
         </Button>
       </form>
